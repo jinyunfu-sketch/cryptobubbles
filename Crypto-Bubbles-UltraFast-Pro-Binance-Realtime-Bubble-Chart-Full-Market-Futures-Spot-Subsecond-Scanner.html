@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ch">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO Long-tail Title Optimization -->
+    <title>Crypto Bubbles Ultra-Fast Pro | Binance Real-time Bubble Chart | Full Market Futures & Spot Sub-second Scanner</title>
+    <!-- SEO Keywords and Description Optimization -->
+    <meta name="keywords" content="Crypto Bubbles, Cryptocurrency Bubble Chart, Binance Real-time Quotes, Binance Futures Scanner, Crypto Trading Monitor, Crypto Price Fluctuation Visualization, Binance Mini Ticker, Spot & Futures Ultra-fast Edition, 1-Minute Volatility Scalping Tool, USDⓈ-M Futures Monitor">
+    <meta name="description" content="Crypto Bubbles Ultra-Fast Pro Edition is a real-time bubble chart monitoring tool designed for crypto traders. It supports full market scanning for Binance USDⓈ-M futures and spot markets, providing 1-minute extreme volatility capture, mathematically precise proportional scaling, and zero-lag asynchronous rendering.">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0e11; --panel-bg: #1e2329;
+            --green: #16c784; --red: #ea3943; --text: #ffffff;
+            --progress-bg: #2b3139; --brand: #fcd535;
+        }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color); color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            overflow: hidden; display: flex; flex-direction: column; user-select: none;
+        }
+        header {
+            height: 60px; background-color: var(--panel-bg);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 10;
+        }
+        
+        .market-toggle { display: flex; background: #0b0e11; border-radius: 6px; padding: 4px; }
+        .market-btn {
+            background: transparent; color: #848e9c; border: none; padding: 6px 16px; 
+            border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .market-btn.active { background: var(--progress-bg); color: var(--brand); }
+        
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .limit-select {
+            background-color: #0b0e11; color: #fff; border: 1px solid #474d57;
+            padding: 6px 10px; border-radius: 4px; font-size: 13px; outline: none; cursor: pointer;
+        }
+
+        .status-box { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        #packet-status { font-family: monospace; font-weight:bold; padding: 4px 8px; border-radius: 4px; transition: 0.3s;}
+
+        #progress-container { width: 100%; height: 3px; background: #0b0e11; z-index: 9; }
+        #progress-bar { height: 100%; width: 100%; background: var(--green); transition: width 1s linear; box-shadow: 0 0 8px var(--green); }
+
+        #chart { flex: 1; position: relative; width: 100%; background: #0b0e11; }
+        
+        footer {
+            height: 65px; /* Increased height slightly to accommodate two lines of text */
+            background-color: var(--panel-bg);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            z-index: 10; border-top: 1px solid #2b3139;
+        }
+        .footer-tabs { display: flex; gap: 10px; }
+        .tab-btn {
+            background: transparent; color: #848e9c; border: none;
+            padding: 6px 12px; border-radius: 4px; cursor: pointer;
+            font-weight: bold; font-size: 14px; transition: 0.2s;
+        }
+        .tab-btn:hover { color: #fff; background-color: #2b3139; }
+        .tab-btn.active { background-color: #2b3139; color: #fff; border-bottom: 2px solid var(--green); }
+
+        .node { cursor: grab; }
+        .node:active { cursor: grabbing; }
+        .node text { pointer-events: none; text-anchor: middle; text-shadow: 0px 1px 3px rgba(0,0,0,0.8); }
+        .symbol { font-weight: 800; fill: #fff; letter-spacing: 0.5px; }
+        .change { font-weight: bold; }
+        .coin-icon { pointer-events: none; }
+        
+        /* Styles for footer links */
+        .contact-link { color: var(--brand); text-decoration: none; font-weight: bold; transition: 0.2s; }
+        .contact-link:hover { color: #fff; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="market-toggle">
+            <button class="market-btn active" onclick="switchMarket('futures')" id="btn-futures">🔥 USDⓈ-M Futures</button>
+            <button class="market-btn" onclick="switchMarket('spot')" id="btn-spot">💰 Spot Market</button>
+        </div>
+        
+        <div class="controls">
+            <!-- Default modified to Full Market Scan 200 -->
+            <select class="limit-select" id="display-limit" onchange="changeDisplayLimit(this.value)">
+                <option value="50">Top 50 Core</option>
+                <option value="100">Top 100 Mainstream</option>
+                <option value="150">Top 150 Extended</option>
+                <option value="200" selected>Full Market Scan</option>
+            </select>
+            
+            <div class="status-box">
+                <span id="packet-status" style="color:#848e9c; background: #2b3139;">⚡ Engine connecting at light speed...</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="progress-container"><div id="progress-bar"></div></div>
+
+    <div id="chart"></div>
+
+    <footer>
+        <div style="font-size: 12px; color: #848e9c; line-height: 1.6;">
+            <div>Mathematically Precise Proportional Scaling | Zero-lag Asynchronous Rendering</div>
+            <!-- Added your contact info at the bottom, clickable -->
+            <div>Business Cooperation / Tool Customization ➔ WhatsApp: <a href="https://wa.me/8619835686826" target="_blank" class="contact-link">19835686826</a> &nbsp;|&nbsp; Email: <a href="mailto:jinyunfu@gmail.com" class="contact-link">jinyunfu@gmail.com</a></div>
+        </div>
+        <div class="footer-tabs">
+            <!-- Default modified to 1 minute -->
+            <button class="tab-btn active" data-period="1m">1m</button>
+            <button class="tab-btn" data-period="5m">5m</button>
+            <button class="tab-btn" data-period="15m">15m</button>
+            <button class="tab-btn" data-period="1h">1H</button>
+            <button class="tab-btn" data-period="1d">1D</button>
+        </div>
+    </footer>
+
+    <script>
+        const container = document.getElementById('chart');
+        let width = container.clientWidth;
+        let height = container.clientHeight;
+
+        const API_CONFIG = {
+            futures: { rest: 'https://fapi.binance.com/fapi/v1/ticker/24hr', ws: 'wss://fstream.binance.com/ws/!miniTicker@arr' },
+            spot: { rest: 'https://api.binance.com/api/v3/ticker/24hr', ws: 'wss://stream.binance.com:9443/ws/!miniTicker@arr' }
+        };
+
+        let currentMarket = 'futures'; 
+        let nodesData = [];
+        let globalRestData = []; 
+        let nodeMap = new Map(); 
+        
+        let svg, nodeElements, circles, images, symbols, changes, simulation;
+        let ws = null;
+        let watchdogInterval = null;
+        
+        // Core variables modified: Default to 200 (Full market) and 1m (1 minute)
+        let currentLimit = 200; 
+        let currentPeriod = '1m'; 
+        let lastWsMessageTime = 0; 
+        
+        let countdownTimer = 60; 
+        let countdownInterval = null;
+
+        window.switchMarket = function(market) {
+            if(currentMarket === market) return;
+            currentMarket = market;
+            
+            document.getElementById('btn-futures').classList.toggle('active', market === 'futures');
+            document.getElementById('btn-spot').classList.toggle('active', market === 'spot');
+            
+            if(ws) ws.close();
+            if(watchdogInterval) clearInterval(watchdogInterval);
+            if(simulation) simulation.stop();
+            
+            document.getElementById('packet-status').innerText = '⚡ Switching engine...';
+            document.getElementById('packet-status').style.background = '#2b3139';
+            document.getElementById('packet-status').style.color = '#848e9c';
+            
+            bootSystem();
+        }
+
+        function bootSystem() {
+            fetchMarketData().then(data => {
+                if (data) {
+                    globalRestData = data;
+                    applyDataLimitAndBuild();
+                    startCountdownTimer(); 
+                }
+            });
+            startWebSocket();
+            startWatchdog();
+        }
+
+        async function fetchMarketData() {
+            try {
+                const res = await fetch(API_CONFIG[currentMarket].rest + '?t=' + Date.now());
+                const rawData = await res.json();
+                let validPairs = rawData.filter(item => item.symbol && item.symbol.endsWith('USDT'));
+                validPairs.sort((a, b) => (parseFloat(b.quoteVolume)||0) - (parseFloat(a.quoteVolume)||0));
+                return validPairs;
+            } catch (error) { return null; }
+        }
+
+        function startCountdownTimer() {
+            if(countdownInterval) clearInterval(countdownInterval);
+            countdownTimer = 60;
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '100%';
+            
+            setTimeout(() => {
+                progressBar.style.transition = 'width 1s linear';
+                countdownInterval = setInterval(() => {
+                    countdownTimer--;
+                    let percentage = (countdownTimer / 60) * 100;
+                    progressBar.style.width = percentage + '%';
+
+                    if (countdownTimer <= 0) {
+                        countdownTimer = 60; 
+                        progressBar.style.width = '100%';
+                        triggerBigBangShuffle(); 
+                    }
+                }, 1000);
+            }, 50);
+        }
+
+        function triggerBigBangShuffle() {
+            if(!simulation) return;
+            nodesData.forEach(d => {
+                d.x = width / 2 + (Math.random() - 0.5) * (width * 0.5);
+                d.y = height / 2 + (Math.random() - 0.5) * (height * 0.5);
+                d.vx = (Math.random() - 0.5) * 200; 
+                d.vy = (Math.random() - 0.5) * 200; 
+            });
+            simulation.alpha(1).restart();
+        }
+
+        function applyDataLimitAndBuild() {
+            let slicedData = globalRestData.slice(0, currentLimit);
+            nodeMap.clear();
+
+            let initBaseRadius = 20;
+
+            nodesData = slicedData.map(item => {
+                let symbol = item.symbol.toUpperCase();
+                let displaySymbol = symbol.replace('USDT', ''); 
+                let iconSymbol = displaySymbol.replace(/^(1000000|10000|1000)/, ''); 
+                
+                let currentPrice = parseFloat(item.lastPrice) || 0;
+                let change24h = parseFloat(item.priceChangePercent) || 0;
+                
+                let node = {
+                    id: symbol, display: displaySymbol, iconId: iconSymbol,
+                    currentPrice: currentPrice, change24h: change24h,
+                    history: [{ t: Date.now(), p: currentPrice }], 
+                    change: change24h, r: initBaseRadius, status: change24h >= 0 ? "up" : "down", 
+                    x: width / 2 + (Math.random() - 0.5) * (width * 0.5), 
+                    y: height / 2 + (Math.random() - 0.5) * (height * 0.5)
+                };
+                nodeMap.set(symbol, node);
+                return node;
+            });
+
+            d3.select("#chart").select("svg").remove();
+            buildD3DOM();
+            calculateAndDraw(); 
+        }
+
+        window.changeDisplayLimit = function(limitValue) {
+            currentLimit = parseInt(limitValue);
+            if(simulation) simulation.stop(); 
+            applyDataLimitAndBuild(); 
+        }
+
+        function startWatchdog() {
+            if(watchdogInterval) clearInterval(watchdogInterval);
+            watchdogInterval = setInterval(() => {
+                if (Date.now() - lastWsMessageTime > 4000) {
+                    document.getElementById('packet-status').innerText = `🟡 WS Intercepted | Silently force-refreshing via API`;
+                    document.getElementById('packet-status').style.color = '#000'; document.getElementById('packet-status').style.background = '#fcd535';
+                    fetchMarketData().then(data => {
+                        if(!data) return;
+                        data.forEach(item => {
+                            const node = nodeMap.get(item.symbol.toUpperCase());
+                            if(node) {
+                                node.currentPrice = parseFloat(item.lastPrice) || node.currentPrice;
+                                node.change24h = parseFloat(item.priceChangePercent) || node.change24h;
+                                pushToHistory(node, Date.now(), node.currentPrice);
+                            }
+                        });
+                    });
+                }
+            }, 3000); 
+        }
+
+        function startWebSocket() {
+            if (ws) ws.close();
+            try {
+                ws = new WebSocket(API_CONFIG[currentMarket].ws);
+                ws.onopen = () => { lastWsMessageTime = Date.now(); };
+                
+                ws.onmessage = (event) => {
+                    lastWsMessageTime = Date.now(); 
+                    const packetStatus = document.getElementById('packet-status');
+                    if (packetStatus.innerText.indexOf('🟢') === -1) {
+                        packetStatus.innerText = `🟢 Ultra-fast data stream connected`;
+                        packetStatus.style.color = '#000'; packetStatus.style.background = '#16c784';
+                    }
+
+                    const data = JSON.parse(event.data);
+                    if(!Array.isArray(data)) return;
+                    const now = Date.now();
+                    data.forEach(ticker => {
+                        const node = nodeMap.get(ticker.s.toUpperCase());
+                        if (node) {
+                            node.currentPrice = parseFloat(ticker.c);
+                            const openPrice = parseFloat(ticker.o);
+                            if(openPrice > 0) node.change24h = ((node.currentPrice - openPrice) / openPrice) * 100;
+                            pushToHistory(node, now, node.currentPrice);
+                        }
+                    });
+                };
+                ws.onerror = () => { lastWsMessageTime = 0; }; 
+                ws.onclose = () => { lastWsMessageTime = 0; setTimeout(startWebSocket, 3000); }; 
+            } catch (e) { lastWsMessageTime = 0; }
+        }
+
+        function pushToHistory(node, time, price) {
+            node.history.push({ t: time, p: price });
+            if (node.history[0].t < time - 3610000) node.history.shift();
+        }
+
+        function calculateAndDraw() {
+            if(!simulation || nodesData.length === 0) return;
+            const now = Date.now();
+
+            nodesData.forEach(node => {
+                let finalChange = 0;
+                if (currentPeriod === '1d') {
+                    finalChange = node.change24h;
+                } else {
+                    let lookback = 60000; 
+                    if (currentPeriod === '5m') lookback = 300000;
+                    if (currentPeriod === '15m') lookback = 900000;
+                    if (currentPeriod === '1h') lookback = 3600000;
+                    let targetTime = now - lookback;
+                    let oldPrice = node.history[0].p; 
+                    for (let i = node.history.length - 1; i >= 0; i--) {
+                        if (node.history[i].t <= targetTime) { oldPrice = node.history[i].p; break; }
+                    }
+                    if (oldPrice > 0) finalChange = ((node.currentPrice - oldPrice) / oldPrice) * 100;
+                }
+                node.change = finalChange;
+                node.status = finalChange >= 0 ? "up" : "down";
+            });
+
+            let maxAbsChange = d3.max(nodesData, d => Math.abs(d.change)) || 0.1;
+            if (maxAbsChange < 0.1) maxAbsChange = 0.1; 
+
+            let minR = width < 800 ? 18 : 24;
+            if (currentLimit > 100) minR = 15;
+
+            let maxR = Math.min(width, height) / 8;
+            if (currentLimit > 100) maxR = Math.min(width, height) / 10; 
+
+            let radiusScale = d3.scaleSqrt()
+                .domain([0, maxAbsChange])
+                .range([minR, maxR]);
+
+            nodesData.forEach(node => {
+                node.r = radiusScale(Math.abs(node.change));
+            });
+
+            nodeElements.sort((a, b) => b.r - a.r).order();
+            simulation.nodes(nodesData);
+            simulation.force("collide").radius(d => d.r + 2).iterations(8);
+            simulation.alphaTarget(0.01).restart(); 
+            
+            updateDOMVisuals();
+        }
+
+        setInterval(calculateAndDraw, 1000); 
+
+        function updateDOMVisuals() {
+            const t = d3.transition().duration(250);
+
+            circles.transition(t)
+                .attr("r", d => d.r)
+                .style("fill", d => d.status === 'up' ? "url(#grad-up)" : "url(#grad-down)")
+                .style("stroke", d => d.status === 'up' ? "rgba(22, 199, 132, 1)" : "rgba(234, 57, 67, 1)");
+
+            images.transition(t)
+                .attr("width", d => Math.max(10, d.r * 1.0))
+                .attr("height", d => Math.max(10, d.r * 1.0))
+                .attr("x", d => -Math.max(10, d.r * 1.0) * 0.5)
+                .attr("y", d => -Math.max(10, d.r * 1.0) * 0.7);
+
+            symbols.transition(t).style("font-size", d => Math.max(9, Math.min(d.r * 0.35, 24)) + "px").attr("dy", "0.1em");
+
+            const isShort = (currentPeriod === '1m' || currentPeriod === '5m' || currentPeriod === '15m');
+            const decimals = isShort ? 3 : 2;
+
+            changes.transition(t)
+                .style("font-size", d => Math.max(8, Math.min(d.r * 0.28, 18)) + "px") 
+                .attr("dy", "1.4em") 
+                .style("fill", d => d.status === 'up' ? "#16c784" : "#ea3943")
+                .text(d => {
+                    if(d.change === 0) return isShort ? "0.000%" : "0.00%";
+                    return (d.change > 0 ? "+" : "") + d.change.toFixed(decimals) + "%";
+                });
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if(this.classList.contains('active')) return;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPeriod = this.getAttribute('data-period');
+                triggerBigBangShuffle(); 
+                calculateAndDraw();
+            });
+        });
+
+        function buildD3DOM() {
+            svg = d3.select("#chart").append("svg").attr("width", width).attr("height", height);
+            const defs = svg.append("defs");
+            const gradUp = defs.append("radialGradient").attr("id", "grad-up").attr("cx", "30%").attr("cy", "30%").attr("r", "70%");
+            gradUp.append("stop").attr("offset", "0%").attr("stop-color", "rgba(255, 255, 255, 0.7)");
+            gradUp.append("stop").attr("offset", "20%").attr("stop-color", "rgba(22, 199, 132, 0.2)");
+            gradUp.append("stop").attr("offset", "100%").attr("stop-color", "rgba(22, 199, 132, 0.9)");
+
+            const gradDown = defs.append("radialGradient").attr("id", "grad-down").attr("cx", "30%").attr("cy", "30%").attr("r", "70%");
+            gradDown.append("stop").attr("offset", "0%").attr("stop-color", "rgba(255, 255, 255, 0.7)");
+            gradDown.append("stop").attr("offset", "20%").attr("stop-color", "rgba(234, 57, 67, 0.2)");
+            gradDown.append("stop").attr("offset", "100%").attr("stop-color", "rgba(234, 57, 67, 0.9)");
+
+            simulation = d3.forceSimulation(nodesData)
+                .velocityDecay(0.2)
+                .force("charge", d3.forceManyBody().strength(-3)) 
+                .force("x", d3.forceX(width / 2).strength(0.005)) 
+                .force("y", d3.forceY(height / 2).strength(0.005))
+                .force("collide", d3.forceCollide().radius(d => d.r + 2).iterations(8).strength(1))
+                .alphaTarget(0.01);
+
+            nodeElements = svg.append("g").selectAll("g").data(nodesData, d => d.id).enter().append("g")
+                .attr("class", "node").call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
+
+            circles = nodeElements.append("circle").attr("r", d => d.r).style("fill", "url(#grad-up)").style("stroke", "rgba(22, 199, 132, 1)").style("stroke-width", "1.5px");
+            images = nodeElements.append("image").attr("class", "coin-icon").attr("href", d => `https://assets.coincap.io/assets/icons/${d.iconId.toLowerCase()}@2x.png`).on("error", function() { d3.select(this).style("display", "none"); }); 
+            symbols = nodeElements.append("text").attr("class", "symbol").text(d => d.display);
+            changes = nodeElements.append("text").attr("class", "change").text("0.00%");
+
+            simulation.on("tick", () => {
+                nodeElements.attr("transform", d => {
+                    const margin = d.r + 2;
+                    if (d.x < margin) { d.x = margin; d.vx *= -0.1; }
+                    if (d.x > width - margin) { d.x = width - margin; d.vx *= -0.1; }
+                    if (d.y < margin) { d.y = margin; d.vy *= -0.1; }
+                    if (d.y > height - margin) { d.y = height - margin; d.vy *= -0.1; }
+                    return `translate(${d.x},${d.y})`;
+                });
+            });
+        }
+
+        function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+        function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+        function dragended(event, d) { if (!event.active) simulation.alphaTarget(0.01); d.fx = null; d.fy = null; }
+
+        window.addEventListener('resize', () => {
+            width = container.clientWidth; height = container.clientHeight;
+            if(svg) svg.attr("width", width).attr("height", height);
+            if(simulation) {
+                simulation.force("x", d3.forceX(width / 2).strength(0.005)).force("y", d3.forceY(height / 2).strength(0.005));
+                simulation.alpha(0.5).restart();
+            }
+        });
+
+        bootSystem();
+    </script>
+</body>
+</html>
